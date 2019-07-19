@@ -53,7 +53,8 @@ if [[ -z "$class" || -z "$file" ]]; then
 	exit 1
 fi
 
-grep $class $CONFIG_FILE -n > /dev/null
+# Checks if the class entered by the user exists in the config file
+grep $class $CONFIG_FILE -n 1>&2 /dev/null
 
 if [ $? -eq 1 ]; then
 	echoerr "$class does not exist!"
