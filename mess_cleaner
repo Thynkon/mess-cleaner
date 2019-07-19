@@ -28,7 +28,7 @@ mode=1
 while getopts "c:f:hm:" option; do
 	case "$option" in
 		c)
-			class=$OPTARG
+			class=$(echo "$OPTARG" | tr "[a-z]" "[A-Z]")
 			;;
 		f)
 			file=$OPTARG
