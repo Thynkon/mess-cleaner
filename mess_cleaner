@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 usage() {
-	echo "mess-cleaner usage:"
+	echo "$PROGRAM_NAME usage:"
 	echo "\t-c\t Class to add to the file name"
 	echo "\t-f\t File to rename"
 	echo "\t-h\t Displays this message\n"
@@ -18,7 +18,9 @@ set -o pipefail
 # List all executed lines. Usefull for debugging
 #set -o xtrace
 
-readonly CONFIG_FILE="modules.conf"
+readonly PROJECT_ROOT="$HOME/dev/mess-cleaner"
+readonly CONFIG_FILE="$PROJECT_ROOT/modules.conf"
+readonly PROGRAM_NAME="mess-cleaner"
 
 class=""
 file=""
@@ -28,6 +30,7 @@ mode=1
 while getopts "c:f:hm:" option; do
 	case "$option" in
 		c)
+			# Uppercase class name
 			class=$(echo "$OPTARG" | tr "[a-z]" "[A-Z]")
 			;;
 		f)
@@ -62,7 +65,7 @@ if [ $? -eq 1 ]; then
 fi
 
 if [ ! -f "$file" ]; then
-	echoerr "File does not exit!"
+	echoerr "File $file does not exit!"
 	exit 1
 fi
 
