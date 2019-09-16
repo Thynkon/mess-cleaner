@@ -1,10 +1,14 @@
 #!/usr/bin/env zsh
 
 usage() {
-	echo "$PROGRAM_NAME usage:"
-	echo "\t-c\t Class to add to the file name"
-	echo "\t-f\t File to rename"
-	echo "\t-h\t Displays this message\n"
+	echo "$PROGRAM_NAME usage:\n"
+	echo "-c\tClass to add to the file name"
+	echo "-f\tFile to rename"
+	echo "-h\tDisplays this message"
+	echo "-m\tProgram mode"
+	echo "\t0 - Rename file, create directory and move file"
+	echo "\t1 - Rename file"
+	echo "\t2 - Create directory and move file\n"
 }
 
 echoerr() {
