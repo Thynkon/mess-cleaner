@@ -28,7 +28,7 @@ readonly PROGRAM_NAME="mess-cleaner"
 class=""
 file=""
 # Default mode is: rename file and create a directory
-mode=1
+mode=2
 
 while getopts "f:hm:" option; do
 	case "$option" in
@@ -82,7 +82,7 @@ class_name+=$(grep $module_name $CONFIG_FILE -n | cut -f1 -d:)
 base_name=$(perl -pe "s/^.*(?=(_[psPS]_))//g;" -pe "s/(_f)?(_v[0-9{2}][a-z]?)?//g" <<< "$file")
 
 file_name="$class_name"
-file_name+="_"
+file_name+="_M"
 file_name+="$module_name"
 file_name+="$base_name"
 
