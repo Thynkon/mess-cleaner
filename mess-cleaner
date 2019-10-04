@@ -29,7 +29,7 @@ class=""
 # Default mode is: rename file and create a directory
 mode=2
 
-while getopts "f:hm:" option; do
+while getopts "f:hm:r" option; do
 	case "$option" in
 		f)
 			file_list+=($OPTARG)
@@ -41,12 +41,31 @@ while getopts "f:hm:" option; do
 		m)
 			mode=$OPTARG
 			;;
+
+		r)
+			recursive=1
+			;;
 		*)
 			usage
 			exit 1
 			;;
 	esac
 done
+
+if [[ $recursive -eq 1 ]]; then
+
+	# List of files that need to be renamed (relative path)
+	# Grep's regex explication:
+	#	find's output is something like ./0510_MandelBrot2/c_M120_p_0510_MandelBrot2_f_v1a.docx
+	#	it matches the './' characters, followed by the exercice's number, name and the directory character (/)
+	#	then, it seeks files that start by c_, i_ and ich_
+	relative_file_list=($(find . * | grep -P ".{2}[0-9]{4}_.*\/(c|i|ich)_.*"))
+
+	# Get the absolute path for each file
+	for file in $relative_file_list; do
+		file_list+=($(realpath $file))
+	done
+fi
 
 for file in $file_list; do
 
