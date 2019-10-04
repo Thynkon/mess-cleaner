@@ -49,6 +49,10 @@ while getopts "f:hm:" option; do
 done
 
 for file in $file_list; do
+
+	# Go to the file's directory because it is easier to rename and create directories
+	cd $(dirname $file)
+	
 	if [[ -z "$file" ]]; then
 		echoerr "Missing options!\n"
 		usage
