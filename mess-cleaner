@@ -79,6 +79,10 @@ for file in $file_list; do
 		exit 1
 	fi
 
+	# Get module name from file
+	# The following regex ignores any character that is before 3 numbers
+	# Example: c_M120_p_0550_Panelwest_f_v1a.pdf
+	# "c_M" are ignored
 	module_name=$(echo "$file" | sed 's/.*[a-zA-Z_]\([0-9]\{3\}\)_.*/\1/')
 
 	# Checks if the class entered by the user exists in the config file
