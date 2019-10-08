@@ -5,9 +5,10 @@ usage() {
 	echo "-f\tFile to rename"
 	echo "-h\tDisplays this message"
 	echo "-m\tProgram mode"
-	echo "\t0 - Rename file, create directory and move file"
-	echo "\t1 - Rename file"
-	echo "\t2 - Create directory and move file\n"
+	echo "\t\t0 - Rename file, create directory and move file"
+	echo "\t\t1 - Rename file"
+	echo "\t\t2 - Create directory and move file"
+	echo "-r\tRename files recursively\n"
 }
 
 echoerr() {
