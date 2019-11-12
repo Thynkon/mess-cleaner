@@ -15,8 +15,6 @@ echoerr() {
 	echo "$@" 1>&2
 }
 
-# This makes the script exit if a command fails
-set -o errexit
 # Avoids expressions like 'error here | true' to be executed
 set -o pipefail
 # List all executed lines. Usefull for debugging
@@ -61,6 +59,12 @@ if [[ $recursive -eq 1 ]]; then
 	#	it matches the './' characters, followed by the exercice's number, name and the directory character (/)
 	#	then, it seeks files that start by c_, i_ and ich_
 	relative_file_list=($(find . * | grep -P ".{2}[0-9]{4}_.*\/(c|i|ich)_.*"))
+
+	if [ ${#relative_file_list[@]} -eq 0 ]; then
+		echo "No files to be renamed"
+		echo "Exiting..."
+		exit 0
+	fi
 
 	# Get the absolute path for each file
 	for file in $relative_file_list; do
