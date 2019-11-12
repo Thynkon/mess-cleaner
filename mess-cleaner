@@ -5,9 +5,9 @@ usage() {
 	echo "-f\tFile to rename"
 	echo "-h\tDisplays this message"
 	echo "-m\tProgram mode"
-	echo "\t\t0 - Rename file, create directory and move file"
-	echo "\t\t1 - Rename file"
-	echo "\t\t2 - Create directory and move file"
+	echo "\t\t1 - Rename file, create directory and move file"
+	echo "\t\t2 - Rename file"
+	echo "\t\t3 - Create directory and move file"
 	echo "-r\tRename files recursively\n"
 }
 
