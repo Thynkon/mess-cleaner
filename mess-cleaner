@@ -64,7 +64,9 @@ if [[ $recursive -eq 1 ]]; then
 	#	find's output is something like ./0510_MandelBrot2/c_M120_p_0510_MandelBrot2_f_v1a.docx
 	#	it matches the './' characters, followed by the exercice's number, name and the directory character (/)
 	#	then, it seeks files that start by c_, i_ and ich_
-	relative_file_list=($(find . * | grep -P ".{2}[0-9]{4}_.*\/(c|i|ich)_.*"))
+	#	the second part of the regex matches all files like "c_ich133_p_0200_Session_f_v1b.pdf" that are
+	#	in the current directory
+	relative_file_list=($(find . * | grep -P "(.{2}[0-9]{4}_.*\/(c|i|ich)_.*)|(.{2}(c|i|ich)_.*)"))
 
 	if [ ${#relative_file_list[@]} -eq 0 ]; then
 		.log $LOG_INFO "No files to be renamed"
