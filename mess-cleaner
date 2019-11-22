@@ -66,7 +66,7 @@ if [[ $recursive -eq 1 ]]; then
 	#	then, it seeks files that start by c_, i_ and ich_
 	#	the second part of the regex matches all files like "c_ich133_p_0200_Session_f_v1b.pdf" that are
 	#	in the current directory
-	relative_file_list=($(find . * | grep -P "(.{2}[0-9]{4}_.*\/(c|i|ich)_.*)|(.{2}(c|i|ich)_.*)"))
+	relative_file_list=($(find . * | grep -P "(^.{2}[0-9]{4}_.*\/(c|i|ich)_.*)|(^.{2}(c|i|ich)_.*)"))
 
 	if [ ${#relative_file_list[@]} -eq 0 ]; then
 		.log $LOG_INFO "No files to be renamed"
@@ -86,7 +86,7 @@ for file in $file_list; do
 	cd $(dirname $file)
 	
 	if [[ -z "$file" ]]; then
-		.log LOG_ERR "Missing options!"
+		.log $LOG_ERR "Missing options!"
 		usage
 		exit 1
 	fi
@@ -101,18 +101,18 @@ for file in $file_list; do
 	grep $module_name $CONFIG_FILE -n 1>&2 /dev/null
 
 	if [ $? -eq 1 ]; then
-		.log LOG_ERR "$module_name does not exist!"
+		.log $LOG_ERR "$module_name does not exist!"
 		exit 1
 	fi
 
 	if [ ! -f "$file" ]; then
-		.log LOG_ERR "File $file does not exist!"
+		.log $LOG_ERR "File $file does not exist!"
 		exit 1
 	fi
 
 	if [[ ! $mode =~ '^[1-3]$' ]]; then
-		.log LOG_ERR "The mode you entered is not valid!"
-		.log LOG_ERR "Enter a mode between 1 and 3"
+		.log $LOG_ERR "The mode you entered is not valid!"
+		.log $LOG_ERR "Enter a mode between 1 and 3"
 		exit 1
 	fi
 
@@ -131,22 +131,22 @@ for file in $file_list; do
 
 	case "$mode" in
 		1)
-			mkdir "$directory_name" && .log LOG_INFO "Directory $directory_name successfully created"
-			mv $file $file_name && .log LOG_INFO "$file renamed to $file_name"
-			mv $file_name $directory_name && .log LOG_INFO "$file_name moved to $directory_name"
+			mkdir "$directory_name" && .log $LOG_INFO "Directory $directory_name successfully created"
+			mv $file $file_name && .log $LOG_INFO "$file renamed to $file_name"
+			mv $file_name $directory_name && .log $LOG_INFO "$file_name moved to $directory_name"
 			;;
 		2)
-			mv $file $file_name && .log LOG_INFO "$file renamed to $file_name"
+			mv $file $file_name && .log $LOG_INFO "$file renamed to $file_name"
 			;;
 		3)
-			mkdir "$directory_name" && .log LOG_INFO "Directory $directory_name successfully created"
-			mv $file $directory_name && .log LOG_INFO "$file_name moved to $directory_name"
+			mkdir "$directory_name" && .log $LOG_INFO "Directory $directory_name successfully created"
+			mv $file $directory_name && .log $LOG_INFO "$file_name moved to $directory_name"
 			;;
 		*)
 			;;
 	esac
 done
 
-.log LOG_INFO "Exiting..."
+.log $LOG_INFO "Exiting..."
 
 exit 0
