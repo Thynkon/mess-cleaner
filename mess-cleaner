@@ -15,23 +15,39 @@ class=""
 # Default mode is: rename file and create a directory
 mode=2
 
+# Directory to lookup for files that need to be renamed when using the recursive mode (-r)
+dir_to_lookup="."
+
 usage() {
 	echo "$PROGRAM_NAME usage:\n"
-	echo "-f\tFile to rename"
-	echo "-h\tDisplays this message"
-	echo "-m\tProgram mode"
-	echo "\t\t1 - Rename file, create directory and move file"
-	echo "\t\t2 - Rename file"
-	echo "\t\t3 - Create directory and move file"
-	echo "-r\tRename files recursively\n"
+	echo "-d directory"
+	echo "\tDirectory to lookup when using the recursive mode"
+	echo "\tYou should use this option with -r, otherwise it won't do anything\n"
+	echo "-f filename"
+	echo "\tFile to rename\n"
+	echo "-h"
+	echo "\tDisplays this message\n"
+	echo "-m mode"
+	echo "\tProgram mode"
+	echo "\t1 - Rename file, create directory and move file"
+	echo "\t2 - Rename file"
+	echo "\t3 - Create directory and move file\n"
+	echo "-r"
+	echo "\tRename files recursively"
+	echo "\tBy default, renames all files that are in the current currectory"
+	echo "\tIf you want to rename files in other directory use the -d option\n"
 }
 
 echoerr() {
 	echo "$@" 1>&2
 }
 
-while getopts "f:hm:rv" option; do
+while getopts "d:f:hm:rv" option; do
 	case "$option" in
+		d)
+			recursive_mode_directory=$OPTARG
+			;;
+
 		f)
 			file_list+=($OPTARG)
 			;;
@@ -60,19 +76,24 @@ done
 if [[ $recursive -eq 1 ]]; then
 
 	# List of files that need to be renamed (relative path)
-	# Grep's regex explication:
-	#	find's output is something like ./0510_MandelBrot2/c_M120_p_0510_MandelBrot2_f_v1a.docx
-	#	it matches the './' characters, followed by the exercice's number, name and the directory character (/)
-	#	then, it seeks files that start by c_, i_ and ich_
-	#	the second part of the regex matches all files like "c_ich133_p_0200_Session_f_v1b.pdf" that are
-	#	in the current directory
-	relative_file_list=($(find . * | grep -P "(^.{2}[0-9]{4}_.*\/(c|i|ich)_.*)|(^.{2}(c|i|ich)_.*)"))
+	# Regex explication:
+	#	find's output is something like ./0510_MandelBrot2/c_M120_p_0510_MandelBrot2_f_v1a.docx or 
+	#	P_Practice/0510_MandelBrot2/c_M120_p_0510_MandelBrot2_f_v1a.docx
+	#	The regex ignores the file path and matches c_M120
+	#
+	#	Another example:
+	#	./c_Inf-M104_s_0010_Script_f_v6.pdf
+	#	Ignores ./ and matches c_Inf
+	relative_file_list=($(find "$dir_to_lookup" -type f -path "$dir_to_lookup/*" -regextype posix-extended -regex "(^.*(c|i|ich)_(ich|Inf|M[0-9]{3}|[0-9]{3}).*$)"))
 
 	if [ ${#relative_file_list[@]} -eq 0 ]; then
 		.log $LOG_INFO "No files to be renamed"
 		.log $LOG_INFO "Exiting..."
 		exit 0
 	fi
+
+	.log $LOG_INFO "${#relative_file_list[@]} file(s) found"
+	.log $LOG_INFO "$relative_file_list"
 
 	# Get the absolute path for each file
 	for file in $relative_file_list; do
@@ -120,7 +141,7 @@ for file in $file_list; do
 	class_name+=$(grep $module_name $CONFIG_FILE -n | cut -f1 -d:)
 
 	# Removes all the unwanted characters
-	base_name=$(perl -pe "s/^.*(?=(_[psPS]_))//g;" -pe "s/(_f)?(_v[0-9{2}][a-z]?)?//g" <<< "$file")
+	base_name=$(perl -pe "s/^.*(?=(_[epsEPS]_))//g;" -pe "s/(_f)?(_v[0-9{2}][a-z]?)?//g" <<< "$file")
 
 	file_name="$class_name"
 	file_name+="_M"
