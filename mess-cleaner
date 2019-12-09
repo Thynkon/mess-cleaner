@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 
-. $HOME/dev/shell-libraries/lib_log.zsh
+readonly CURRENT_DIR=$(dirname "$0")
+. "$CURRENT_DIR/shell-libraries/lib_log.zsh"
 
 # Avoids expressions like 'error here | true' to be executed
 set -o pipefail
@@ -119,7 +120,7 @@ for file in $file_list; do
 	module_name=$(echo "$file" | sed 's/.*[a-zA-Z_]\([0-9]\{3\}\)_.*/\1/')
 
 	# Checks if the class entered by the user exists in the config file
-	grep $module_name $CONFIG_FILE -n 1>&2 /dev/null
+	grep $module_name -q $CONFIG_FILE -n 1>&2 /dev/null
 
 	if [ $? -eq 1 ]; then
 		.log $LOG_ERR "$module_name does not exist!"

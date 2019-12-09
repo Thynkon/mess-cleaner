@@ -1,0 +1,3 @@
+[submodule "shell-libraries"]
+	path = shell-libraries
+	url = https://github.com/Thynkon/shell-libraries.git
