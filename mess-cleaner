@@ -31,12 +31,13 @@ usage() {
 	echo "-m mode"
 	echo "\tProgram mode"
 	echo "\t1 - Rename file, create directory and move file"
-	echo "\t2 - Rename file"
+	echo "\t2 - Rename file (default)"
 	echo "\t3 - Create directory and move file\n"
 	echo "-r"
 	echo "\tRename files recursively"
 	echo "\tBy default, renames all files that are in the current currectory"
 	echo "\tIf you want to rename files in other directory use the -d option\n"
+	echo "-v verbosity level (default=LOG_ERR)"
 }
 
 echoerr() {
