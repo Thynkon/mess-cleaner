@@ -40,10 +40,6 @@ usage() {
 	echo "-v verbosity level (default=LOG_ERR)"
 }
 
-echoerr() {
-	echo "$@" 1>&2
-}
-
 while getopts "d:f:hm:rv" option; do
 	case "$option" in
 		d)
