@@ -166,6 +166,6 @@ for file in $file_list; do
 	esac
 done
 
-.log $LOG_INFO "Exiting..."
+.log $LOG_INFO "$PROGRAM_NAME: Exiting..."
 
 exit 0
