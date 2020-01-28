@@ -21,6 +21,7 @@ dir_to_lookup="."
 
 usage() {
 	echo "$PROGRAM_NAME usage:\n"
+	echo "$PROGRAM_NAME looks for modules.conf at $HOME/.config/mess-cleaner or at $HOME/dev/mess-cleaner\n"
 	echo "-d directory"
 	echo "\tDirectory to lookup when using the recursive mode"
 	echo "\tYou should use this option with -r, otherwise it won't do anything\n"
