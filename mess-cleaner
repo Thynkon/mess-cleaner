@@ -10,9 +10,15 @@ set -o pipefail
 
 readonly PROGRAM_NAME=$(basename $0)
 readonly PROJECT_ROOT="$HOME/dev/$PROGRAM_NAME"
-readonly CONFIG_FILE="$PWD/modules.conf"
 
 readonly MODULE_NAME_REGEX=".*[a-zA-Z_]\([0-9]\{3\}\)_.*"
+
+config_file_locations=(\
+	"$HOME/dev/mess-cleaner/modules.conf"
+	"$HOME/.config/mess-cleaner/modules.conf"
+)
+
+config_file=""
 
 class=""
 # Default mode is: rename file and create a directory
@@ -58,7 +64,6 @@ retrieve_filelist() {
 
 	if [ ! -d "$directory" ]; then
 		.log $LOG_ERR "$PROGRAM_NAME: directory '$directory' does not exit"
-		.log $LOG_ERR "$PROGRAM_NAME: exiting..."
 		exit 1
 	fi
 
@@ -141,6 +146,19 @@ main() {
 		esac
 	done
 
+	for f in "${config_file_locations[@]}"; do
+		if [ -f "$f" ]; then
+			config_file=$f
+			.log $LOG_INFO "$PROGRAM_NAME: Using $config_file"
+			break
+		fi
+	done
+
+	if [ -z "$config_file" ]; then
+		.log $LOG_ERR "PROGRAM_NAME: No config files were found!"
+		exit 1
+	fi
+
 	if [[ $recursive -eq 1 ]]; then
 		retrieve_filelist "$dir_to_lookup"
 
@@ -179,13 +197,13 @@ main() {
 		get_module "$file" "$MODULE_NAME_REGEX"
 
 		# Checks if the class entered by the user exists in the config file
-		check_class_existence $module $CONFIG_FILE
+		check_class_existence $module $config_file
 		if [ $? -ne 0 ]; then
 			.log $LOG_ERR "$PROGRAM_NAME: $module does not exist!"
 			exit 1
 		fi
 
-		generate_class_name $module $CONFIG_FILE
+		generate_class_name $module $config_file
 
 		# Removes all the unwanted characters
 		base_name=$(perl -pe "s/^.*(?=(_[epsEPS]_))//g;" -pe "s/(_f)?(_v[0-9{2}][a-z]?)?//g" <<< "$file")
