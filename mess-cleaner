@@ -8,9 +8,17 @@ set -o pipefail
 # List all executed lines. Usefull for debugging
 #set -o xtrace
 
-readonly PROGRAM_NAME="mess-cleaner"
+readonly PROGRAM_NAME=$(basename $0)
 readonly PROJECT_ROOT="$HOME/dev/$PROGRAM_NAME"
-readonly CONFIG_FILE="$PROJECT_ROOT/modules.conf"
+
+readonly MODULE_NAME_REGEX=".*[a-zA-Z_]\([0-9]\{3\}\)_.*"
+
+config_file_locations=(\
+	"$HOME/dev/mess-cleaner/modules.conf"
+	"$HOME/.config/mess-cleaner/modules.conf"
+)
+
+config_file=""
 
 class=""
 # Default mode is: rename file and create a directory
@@ -18,6 +26,17 @@ mode=2
 
 # Directory to lookup for files that need to be renamed when using the recursive mode (-r)
 dir_to_lookup="."
+
+# Recursive mode disabled by default
+recursive=0
+
+# List containing the files passed by the user or
+# the files to be renamed that matched a regex (recursive mode)
+file_list=()
+
+file=""
+file_dirname=""
+file_basename=""
 
 usage() {
 	echo "$PROGRAM_NAME usage:\n"
@@ -32,144 +51,192 @@ usage() {
 	echo "-m mode"
 	echo "\tProgram mode"
 	echo "\t1 - Rename file, create directory and move file"
-	echo "\t2 - Rename file"
+	echo "\t2 - Rename file (default)"
 	echo "\t3 - Create directory and move file\n"
 	echo "-r"
 	echo "\tRename files recursively"
 	echo "\tBy default, renames all files that are in the current currectory"
 	echo "\tIf you want to rename files in other directory use the -d option\n"
+	echo "-v verbosity level (default=LOG_ERR)"
 }
 
-echoerr() {
-	echo "$@" 1>&2
-}
+retrieve_filelist() {
+	local directory=$1
 
-while getopts "d:f:hm:rv" option; do
-	case "$option" in
-		d)
-			recursive_mode_directory=$OPTARG
-			;;
-
-		f)
-			file_list+=($OPTARG)
-			;;
-		h)
-			usage
-			exit 0
-			;;
-		m)
-			mode=$OPTARG
-			;;
-
-		r)
-			recursive=1
-			;;
-
-		v)
-			verbose_level=$(($verbose_level+1))
-			;;
-		*)
-			usage
-			exit 1
-			;;
-	esac
-done
-
-if [[ $recursive -eq 1 ]]; then
+	if [ ! -d "$directory" ]; then
+		.log $LOG_ERR "$PROGRAM_NAME: directory '$directory' does not exit"
+		exit 1
+	fi
 
 	# List of files that need to be renamed (relative path)
 	# Regex explication:
 	#	find's output is something like ./0510_MandelBrot2/c_M120_p_0510_MandelBrot2_f_v1a.docx or 
-	#	P_Practice/0510_MandelBrot2/c_M120_p_0510_MandelBrot2_f_v1a.docx
-	#	The regex ignores the file path and matches c_M120
+	#	P_Practice/0510_MandelBrot2/c_M120_p_0510_MandelBrot2_f_v1a.docx The regex ignores the file path and matches c_M120
 	#
 	#	Another example:
 	#	./c_Inf-M104_s_0010_Script_f_v6.pdf
 	#	Ignores ./ and matches c_Inf
-	relative_file_list=($(find "$dir_to_lookup" -type f -path "$dir_to_lookup/*" -regextype posix-extended -regex "(^.*(c|i|ich)_(ich|Inf|M[0-9]{3}|[0-9]{3}).*$)"))
+	file_list+=($(\
+		find "$dir_to_lookup" -type f -path "$dir_to_lookup/*" \
+			-regextype posix-extended -regex "(^.*(c|i|ich)_(ich|Inf|M[0-9]{3}|[0-9]{3}).*$)" \
+	))
+}
 
-	if [ ${#relative_file_list[@]} -eq 0 ]; then
-		.log $LOG_INFO "No files to be renamed"
-		.log $LOG_INFO "Exiting..."
-		exit 0
-	fi
-
-	.log $LOG_INFO "${#relative_file_list[@]} file(s) found"
-	.log $LOG_INFO "$relative_file_list"
-
-	# Get the absolute path for each file
-	for file in $relative_file_list; do
-		file_list+=($(realpath $file))
-	done
-fi
-
-for file in $file_list; do
-
-	# Go to the file's directory because it is easier to rename and create directories
-	cd $(dirname $file)
-	
-	if [[ -z "$file" ]]; then
-		.log $LOG_ERR "Missing options!"
-		usage
-		exit 1
-	fi
+get_module() {
+	local file=$1
+	local regex=$2
 
 	# Get module name from file
 	# The following regex ignores any character that is before 3 numbers
 	# Example: c_M120_p_0550_Panelwest_f_v1a.pdf
 	# "c_M" are ignored
-	module_name=$(echo "$file" | sed 's/.*[a-zA-Z_]\([0-9]\{3\}\)_.*/\1/')
+	module=$(echo "$file" | sed "s/$regex/\1/")
+}
+
+check_class_existence() {
+	local module=$1
+	local config_file=$2
 
 	# Checks if the class entered by the user exists in the config file
-	grep $module_name -q $CONFIG_FILE -n 1>&2 /dev/null
+	grep "$module" -q "$config_file" -n 1>&2 /dev/null
 
-	if [ $? -eq 1 ]; then
-		.log $LOG_ERR "$module_name does not exist!"
-		exit 1
+	if [ $? -ne 0 ]; then
+		return 1
 	fi
 
-	if [ ! -f "$file" ]; then
-		.log $LOG_ERR "File $file does not exist!"
-		exit 1
-	fi
+	return 0
+}
 
-	if [[ ! $mode =~ '^[1-3]$' ]]; then
-		.log $LOG_ERR "The mode you entered is not valid!"
-		.log $LOG_ERR "Enter a mode between 1 and 3"
-		exit 1
-	fi
+generate_class_name() {
+	local module=$1
+	local config_file=$2
 
 	class_name="INFO"
-	class_name+=$(grep $module_name $CONFIG_FILE -n | cut -f1 -d:)
+	class_name+=$(grep $module $config_file -n | cut -f1 -d:)
+}
 
-	# Removes all the unwanted characters
-	base_name=$(perl -pe "s/^.*(?=(_[epsEPS]_))//g;" -pe "s/(_f)?(_v[0-9{2}][a-z]?)?//g" <<< "$file")
+main() {
+	while getopts "d:f:hm:rv" option; do
+		case "$option" in
+			d)
+				recursive_mode_directory=$OPTARG
+				;;
 
-	file_name="$class_name"
-	file_name+="_M"
-	file_name+="$module_name"
-	file_name+="$base_name"
+			f)
+				file_list+=($OPTARG)
+				;;
+			h)
+				usage
+				exit 0
+				;;
+			m)
+				mode=$OPTARG
+				;;
 
-	directory_name=$(perl -pe "s/^.*(?=([0-9]{4}))//g;" -pe "s/\..*$//g" <<< "$base_name")
+			r)
+				recursive=1
+				;;
 
-	case "$mode" in
-		1)
-			mkdir "$directory_name" && .log $LOG_INFO "Directory $directory_name successfully created"
-			mv $file $file_name && .log $LOG_INFO "$file renamed to $file_name"
-			mv $file_name $directory_name && .log $LOG_INFO "$file_name moved to $directory_name"
-			;;
-		2)
-			mv $file $file_name && .log $LOG_INFO "$file renamed to $file_name"
-			;;
-		3)
-			mkdir "$directory_name" && .log $LOG_INFO "Directory $directory_name successfully created"
-			mv $file $directory_name && .log $LOG_INFO "$file_name moved to $directory_name"
-			;;
-		*)
-			;;
-	esac
-done
+			v)
+				verbose_level+=1
+				;;
+			*)
+				usage
+				exit 1
+				;;
+		esac
+	done
 
-.log $LOG_INFO "Exiting..."
+	for f in "${config_file_locations[@]}"; do
+		if [ -f "$f" ]; then
+			config_file=$f
+			.log $LOG_INFO "$PROGRAM_NAME: Using $config_file"
+			break
+		fi
+	done
+
+	if [ -z "$config_file" ]; then
+		.log $LOG_ERR "PROGRAM_NAME: No config files were found!"
+		exit 1
+	fi
+
+	if [[ $recursive -eq 1 ]]; then
+		retrieve_filelist "$dir_to_lookup"
+
+		if [ ${#file_list[@]} -eq 0 ]; then
+			.log $LOG_INFO "$PROGRAM_NAME: No files to be renamed"
+			.log $LOG_INFO "$PROGRAM_NAME: Exiting..."
+			exit 0
+		fi
+
+		.log $LOG_INFO "$PROGRAM_NAME: ${#file_list[@]} file(s) found"
+		.log $LOG_INFO "$PROGRAM_NAME: $file_list"
+	else
+		if [[ "${file_list[#]}" -eq 0 ]]; then
+			.log $LOG_ERR "$PROGRAM_NAME: Missing options!"
+			usage
+			exit 1
+		fi
+	fi
+
+	for file in "${file_list[@]}"; do
+		file=$(realpath "$file")
+		file_dirname=$(dirname "$file")
+		file_basename=$(basename "$file")
+
+		if [ ! -f "$file" ]; then
+			.log $LOG_ERR "$PROGRAM_NAME: File $file does not exist!"
+			exit 1
+		fi
+
+		if [[ ! $mode =~ '^[1-3]$' ]]; then
+			.log $LOG_ERR "$PROGRAM_NAME: The mode you entered is not valid!"
+			.log $LOG_ERR "$PROGRAM_NAME: Enter a mode between 1 and 3"
+			exit 1
+		fi
+
+		get_module "$file" "$MODULE_NAME_REGEX"
+
+		# Checks if the class entered by the user exists in the config file
+		check_class_existence $module $config_file
+		if [ $? -ne 0 ]; then
+			.log $LOG_ERR "$PROGRAM_NAME: $module does not exist!"
+			exit 1
+		fi
+
+		generate_class_name $module $config_file
+
+		# Removes all the unwanted characters
+		base_name=$(perl -pe "s/^.*(?=(_[epsEPS]_))//g;" -pe "s/(_f)?(_v[0-9{2}][a-z]?)?//g" <<< "$file")
+
+		file_name="$class_name"
+		file_name+="_M"
+		file_name+="$module"
+		file_name+="$base_name"
+
+		directory_name=$(perl -pe "s/^.*(?=([0-9]{4}))//g;" -pe "s/\..*$//g" <<< "$base_name")
+
+		case "$mode" in
+			1)
+				mkdir "$directory_name" && .log $LOG_INFO "$PROGRAM_NAME: Directory $directory_name successfully created"
+				mv $file "$file_dirname/$file_name" && .log $LOG_INFO "$PROGRAM_NAME: $file_basename renamed to $file_name"
+				mv $file_name $directory_name && .log $LOG_INFO "$PROGRAM_NAME: $file_basename moved to $directory_name"
+				;;
+			2)
+				mv $file "$file_dirname/$file_name" && .log $LOG_INFO "$PROGRAM_NAME: $file_basename renamed to $file_name"
+				;;
+			3)
+				mkdir "$directory_name" && .log $LOG_INFO "$PROGRAM_NAME: Directory $directory_name successfully created"
+				mv $file $directory_name && .log $LOG_INFO "$PROGRAM_NAME: $file_basename moved to $directory_name"
+				;;
+			*)
+				;;
+		esac
+	done
+
+	.log $LOG_INFO "$PROGRAM_NAME: Exiting..."
+}
+
+main $@
 
 exit 0
