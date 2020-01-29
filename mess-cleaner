@@ -76,10 +76,25 @@ retrieve_filelist() {
 	#	Another example:
 	#	./c_Inf-M104_s_0010_Script_f_v6.pdf
 	#	Ignores ./ and matches c_Inf
-	file_list+=($(\
-		find "$dir_to_lookup" -type f -path "$dir_to_lookup/*" \
-			-regextype posix-extended -regex "(^.*(c|i|ich)_(ich|Inf|M[0-9]{3}|[0-9]{3}).*$)" \
-	))
+
+	# Reference: https://askubuntu.com/a/343753
+	# Some files might have spaces in their names, and when converting find's output
+	# to an array, zsh splits the string using the character " " as delimiter
+	# e.g:
+	#	ich_117_p_0110_How to install a connection module cat 5E RandM_f_v1c.pdf
+	# 	If I try to convert the string above to an array, the final array will look like this:
+	#		ich_117_p_0110_How
+	#		to install
+	#		a connection
+	#		module
+	#		cat
+	#		5E
+	#		RandM_f_v1c.pdf
+	find "$dir_to_lookup" -type f -path "$dir_to_lookup/*" \
+			-regextype posix-extended -regex "(^.*(c|i|ich)_(ich|Inf|M[0-9]{3}|[0-9]{3}).*$)" -print0 |
+	while IFS= read -r -d '' file; do
+		file_list+=($file)
+	done
 }
 
 get_module() {
@@ -207,7 +222,10 @@ main() {
 		generate_class_name $module $config_file
 
 		# Removes all the unwanted characters
-		base_name=$(perl -pe "s/^.*(?=(_[a-zA-z]_))//g;" -pe "s/(_f)?(_v[0-9{2}][a-z]?)?//g" <<< "$file")
+		base_name=$(perl -pe "s/^.*(?=(_[ejnopstyzEJNOPSTYZ]_))//g;" -pe "s/(_f)?(_v[0-9{2}][a-z]?)?//g" <<< "$file")
+		# Remove spaces, and uppercase the next character
+		# https://stackoverflow.com/a/17333277
+		base_name=$(echo $base_name | sed 's/\ \(.\)/\U\1/g')
 
 		file_name="$class_name"
 		file_name+="_M"
