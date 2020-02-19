@@ -187,7 +187,7 @@ main() {
 		.log $LOG_INFO "$PROGRAM_NAME: ${#file_list[@]} file(s) found"
 		.log $LOG_INFO "$PROGRAM_NAME: $file_list"
 	else
-		if [[ "${file_list[#]}" -eq 0 ]]; then
+		if [[ "${#file_list[@]}" -eq 0 ]]; then
 			.log $LOG_ERR "$PROGRAM_NAME: Missing options!"
 			usage
 			exit 1
