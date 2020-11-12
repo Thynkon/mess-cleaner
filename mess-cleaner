@@ -14,7 +14,7 @@ readonly PROJECT_ROOT="$HOME/dev/$PROGRAM_NAME"
 readonly MODULE_NAME_REGEX=".*[a-zA-Z_]\([0-9]\{3\}\)_.*"
 
 config_file_locations=(\
-	"$HOME/dev/mess-cleaner/classes.conf"
+	"$HOME/programming/mess-cleaner/classes.conf"
 	"$HOME/.config/mess-cleaner/classes.conf"
 )
 
@@ -42,25 +42,37 @@ file_dirname=""
 file_basename=""
 
 usage() {
-	echo "$PROGRAM_NAME usage:\n"
-	echo "$PROGRAM_NAME looks for classes.conf at $HOME/.config/mess-cleaner or at $HOME/dev/mess-cleaner\n"
-	echo "-d directory"
-	echo "\tDirectory to lookup when using the recursive mode"
-	echo "\tYou should use this option with -r, otherwise it won't do anything\n"
-	echo "-f filename"
-	echo "\tFile to rename\n"
-	echo "-h"
-	echo "\tDisplays this message\n"
-	echo "-m mode"
-	echo "\tProgram mode"
-	echo "\t1 - Rename file, create directory and move file"
-	echo "\t2 - Rename file (default)"
-	echo "\t3 - Create directory and move file\n"
-	echo "-r"
-	echo "\tRename files recursively"
-	echo "\tBy default, renames all files that are in the current currectory"
-	echo "\tIf you want to rename files in other directory use the -d option\n"
-	echo "-v verbosity level (default=LOG_ERR)"
+	cat << EOF
+${PROGRAM_NAME} usage:
+
+${PROGRAM_NAME} looks for classes.conf at
+	${config_file_locations[1]}
+	${config_file_locations[2]}
+
+-d directory
+	Directory to lookup when using the recursive mode
+	You should use this option with -r, otherwise it won't do anything
+
+-f filename
+	File to rename
+
+-h
+	Displays this message
+
+-m mode
+	Program mode
+
+	1 - Rename file, create directory and move file
+	2 - Rename file (default)
+	3 - Create directory and move file
+
+-r
+	Rename files recursively
+	By default, renames all files that are in the current currectory
+	If you want to rename files in other directory use the -d option
+
+-v verbosity level (default=LOG_ERR)
+EOF
 }
 
 retrieve_filelist() {
